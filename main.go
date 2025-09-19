@@ -100,8 +100,11 @@ func main() {
 	// настройте подключение к БД
 	db, err := sql.Open("sqlite", "tracker.db")
 	if err != nil {
-		return
+		panic(err.Error())
+		//fmt.Println(err.Error)
+		//return
 	}
+	defer db.Close()
 
 	store := NewParcelStore(db)
 	service := NewParcelService(store)

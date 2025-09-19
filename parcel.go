@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"errors"
 )
 
 type ParcelStore struct {
@@ -59,7 +58,10 @@ func (s ParcelStore) GetByClient(client int) ([]Parcel, error) {
 
 	for result.Next() {
 		p := Parcel{}
-		result.Scan(&p.Number, &p.Client, &p.Status, &p.Address, &p.CreatedAt)
+		err := result.Scan(&p.Number, &p.Client, &p.Status, &p.Address, &p.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
 
 		res = append(res, p)
 	}
@@ -82,17 +84,17 @@ func (s ParcelStore) SetAddress(number int, address string) error {
 	// менять адрес можно только если значение статуса registered
 	var status string
 
-	row := s.db.QueryRow("select status from parcel where number = :number", sql.Named("number", number))
+	row := s.db.QueryRow("select status from parcel where number = :number and status = :status", sql.Named("number", number))
 	err := row.Scan(&status)
 	if err != nil {
 		return err
 	}
 
-	if status != "registered" {
-		return errors.New("error: the status must be registered")
-	}
+	_, err = s.db.Exec("update parcel set address = :address where number = :number and status = :status",
+		sql.Named("address", address),
+		sql.Named("number", number),
+		sql.Named("status", status))
 
-	_, err = s.db.Exec("update parcel set address = :address where number = :number", sql.Named("address", address), sql.Named("number", number))
 	if err != nil {
 		return err
 	}
@@ -111,11 +113,7 @@ func (s ParcelStore) Delete(number int) error {
 		return err
 	}
 
-	if status != "registered" {
-		return errors.New("error: the status must be registered")
-	}
-
-	_, err = s.db.Exec("delete from parcel where number = :number", sql.Named("number", number))
+	_, err = s.db.Exec("delete from parcel where number = :number and status = :status", sql.Named("number", number), sql.Named("status", status))
 	if err != nil {
 		return err
 	}
