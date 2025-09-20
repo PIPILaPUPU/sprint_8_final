@@ -84,7 +84,7 @@ func (s ParcelStore) SetAddress(number int, address string) error {
 	// менять адрес можно только если значение статуса registered
 	var status string
 
-	row := s.db.QueryRow("select status from parcel where number = :number and status = :status", sql.Named("number", number))
+	row := s.db.QueryRow("select status from parcel where number = :number", sql.Named("number", number))
 	err := row.Scan(&status)
 	if err != nil {
 		return err
